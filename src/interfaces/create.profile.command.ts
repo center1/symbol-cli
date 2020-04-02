@@ -123,6 +123,17 @@ export abstract class CreateProfileCommand extends Command {
  * Monitor profile options.
  */
 export class CreateProfileOptions extends ProfileOptions {
+    @option({
+        description: '(Optional) Import a profile using a private key.',
+        toggle: true,
+    })
+    'private-key': boolean
+
+    @option({
+        description: '(Optional) Import a profile using a mnemonic passphrase.',
+        toggle: true,
+    })
+    mnemonic: boolean
 
     @option({
         flag: 'u',

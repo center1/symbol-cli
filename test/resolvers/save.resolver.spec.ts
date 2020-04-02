@@ -22,17 +22,19 @@ describe('Save resolver', () => {
 
     it('should return boolean', async () => {
         const options = {
-            save: true,
-            url: '',
-            network: '',
-            profile: '',
-            password: '',
-            default: false,
-            generationHash: '1',
-            namespaceId: '',
-            divisibility: 0,
+            'save': true,
+            'url': '',
+            'network': '',
+            'profile': '',
+            'password': '',
+            'default': false,
+            'generationHash': '1',
+            'namespaceId': '',
+            'divisibility': 0,
+            'private-key': true,
+            'mnemonic': false,
         }
-        expect(await new SaveResolver().resolve(options)).to.be.equal(true)
+        expect(await new SaveResolver().resolve( options)).to.be.equal(true)
     })
 
 })

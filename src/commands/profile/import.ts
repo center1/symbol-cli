@@ -15,18 +15,22 @@
  * limitations under the License.
  *
  */
+import {command, metadata, option} from 'clime'
+import {SimpleWallet} from 'symbol-sdk'
+import chalk from 'chalk'
+
 import {AccountCredentialsTable, CreateProfileCommand, CreateProfileOptions} from '../../interfaces/create.profile.command'
 import {DefaultResolver} from '../../resolvers/default.resolver'
 import {GenerationHashResolver} from '../../resolvers/generationHash.resolver'
+import {ImportType} from '../../models/importType.enum'
+import {ImportTypeResolver} from '../../resolvers/importType.resolver'
+import {NetworkCurrencyResolver} from '../../resolvers/networkCurrency.resolver'
 import {NetworkResolver} from '../../resolvers/network.resolver'
 import {PasswordResolver} from '../../resolvers/password.resolver'
+import {PrivateKeyFromMnemonicResolver} from '../../resolvers/privateKeyFromMnemonic.resolver'
 import {PrivateKeyResolver} from '../../resolvers/privateKey.resolver'
 import {ProfileNameResolver} from '../../resolvers/profile.resolver'
 import {URLResolver} from '../../resolvers/url.resolver'
-import {SimpleWallet} from 'symbol-sdk'
-import {command, metadata, option} from 'clime'
-import chalk from 'chalk'
-import {NetworkCurrencyResolver} from '../../resolvers/networkCurrency.resolver'
 
 export class CommandOptions extends CreateProfileOptions {
     @option({
@@ -48,13 +52,17 @@ export default class extends CreateProfileCommand {
     @metadata
     async execute(options: CommandOptions) {
         const networkType = await new NetworkResolver().resolve(options)
-        const privateKey = await new PrivateKeyResolver().resolve(options)
         options.url = await new URLResolver().resolve(options)
         const profileName = await new ProfileNameResolver().resolve(options)
         const password = await new PasswordResolver().resolve(options)
         const isDefault = await new DefaultResolver().resolve(options)
         const generationHash = await new GenerationHashResolver().resolve(options)
         const networkCurrency = await new NetworkCurrencyResolver().resolve(options)
+        const importType = await new ImportTypeResolver().resolve(options)
+
+        const privateKey = importType === ImportType.PrivateKey
+            ? await new PrivateKeyResolver().resolve(options)
+            : await new PrivateKeyFromMnemonicResolver().resolve()
 
         const simpleWallet = SimpleWallet.createFromPrivateKey(
             profileName,

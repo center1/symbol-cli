@@ -94,9 +94,10 @@ export class ProfileRepository {
             networkCurrency: networkCurrency.toDTO(),
             default: '0',
             version: CURRENT_PROFILE_VERSION,
+            type: 'PrivateKey',
         }
         this.saveProfiles(profiles)
-        return new Profile(simpleWallet, url, networkGenerationHash, networkCurrency, 2)
+        return new Profile(simpleWallet, url, networkGenerationHash, networkCurrency, 2, 'PrivateKey')
     }
 
     /**
@@ -205,20 +206,18 @@ export class ProfileRepository {
                 const [name, profile] = entry
                 const profileVersion = Number(profile.version) || 0
 
-                // migrate outdated files
-                if (profileVersion < CURRENT_PROFILE_VERSION) {
-                    // get migrations to apply
-                    const migrations = Object.entries(allMigrations)
-                        .filter(([version]) => Number(version) > profileVersion)
-                        .map(([, migration]) => migration)
+                // Skip if profile is up-to-tate (shouldn't happen)
+                if (profileVersion >= CURRENT_PROFILE_VERSION) {return {[name]: profile}}
 
-                    // return migrated profiles
-                    return migrations
-                        .map((migration) => migration({[name]: profile}))
-                        .reduce((acc, migratedProfile) => ({...acc, ...migratedProfile}), {})
-                }
+                // get migrations to apply
+                const migrations = Object.entries(allMigrations)
+                    .filter(([version]) => Number(version) > profileVersion)
+                    .map(([, migration]) => migration)
 
-                return {[name]: profile}
+                // apply migrations
+                let migrated = {[name]: profile}
+                migrations.forEach((migration) => { migrated = migration(migrated) })
+                return migrated
             })
             .reduce((acc, profile) => ({...acc, ...profile}), {})
     }

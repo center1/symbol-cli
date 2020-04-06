@@ -44,7 +44,7 @@ describe('Configure service', () => {
         const networkGenerationHash = 'test'
         const networkCurrency = NetworkCurrency.createFromDTO({namespaceId: 'symbol.xym', divisibility: 6})
 
-        const profile = new Profile(simpleWallet, url, networkGenerationHash, networkCurrency, 2)
+        const profile = new Profile(simpleWallet, url, networkGenerationHash, networkCurrency, 2, 'PrivateKey')
 
         const mockProfileRepository = mock(ProfileRepository)
         when(mockProfileRepository.save(simpleWallet, url,  networkGenerationHash, networkCurrency))
@@ -69,7 +69,7 @@ describe('Configure service', () => {
 
         const networkCurrency = NetworkCurrency.createFromDTO({namespaceId: 'symbol.xym', divisibility: 6})
 
-        const profile = new Profile(simpleWallet, url, networkGenerationHash, networkCurrency, 2)
+        const profile = new Profile(simpleWallet, url, networkGenerationHash, networkCurrency, 2, 'PrivateKey')
         const mockProfileRepository = mock(ProfileRepository)
         when(mockProfileRepository.find('default'))
             .thenReturn(profile)
@@ -102,7 +102,7 @@ describe('Configure service', () => {
         const url = 'http://localhost:1234'
         const networkGenerationHash = 'test'
         const networkCurrency = NetworkCurrency.createFromDTO({namespaceId: 'symbol.xym', divisibility: 6})
-        const profile = new Profile(simpleWallet, url, networkGenerationHash, networkCurrency, 2,)
+        const profile = new Profile(simpleWallet, url, networkGenerationHash, networkCurrency, 2, 'PrivateKey')
         const mockProfileRepository = mock(ProfileRepository)
         when(mockProfileRepository.find('test'))
             .thenReturn(profile)

@@ -23,6 +23,8 @@ import {NetworkCurrency, NetworkCurrencyDTO} from './networkCurrency.model'
 
 export const CURRENT_PROFILE_VERSION = 2
 
+export type ProfileType = 'PrivateKey' | 'HD'
+
 /**
  * Profile data transfer object.
  */
@@ -33,11 +35,15 @@ interface ProfileDTO {
     networkCurrency: NetworkCurrencyDTO;
     version: number;
     default: '0' | '1';
+    type: ProfileType;
+    encryptedPassphrase?: string;
+    path?: string;
 }
+
 
 /**
  * Profile DTO mapped by profile names
- */
+*/
 export type ProfileRecord = Record<string, ProfileDTO>
 
 /**
@@ -57,6 +63,9 @@ export class Profile {
                 public readonly networkGenerationHash: string,
                 public readonly networkCurrency: NetworkCurrency,
                 public readonly version: number,
+                public readonly type: ProfileType,
+                public readonly encryptedPassphrase?: string,
+                public readonly path?: string,
     ) {
         const {namespaceId, divisibility} = networkCurrency
 
@@ -71,8 +80,11 @@ export class Profile {
             ['Network', NetworkType[this.simpleWallet.network]],
             ['Node URL', this.url],
             ['Generation Hash', this.networkGenerationHash],
-            ['NetworkCurrency', `name: ${namespaceId.fullName}, divisibility: ${divisibility}`],
+            ['Network Currency', `name: ${namespaceId.fullName}, divisibility: ${divisibility}`],
+            ['Profile type', this.type],
         )
+
+        if(this.type === 'HD') {this.table.push(['Path', this.path])}
     }
 
     /**
@@ -111,6 +123,9 @@ export class Profile {
             profileDTO.networkGenerationHash,
             NetworkCurrency.createFromDTO(profileDTO.networkCurrency),
             profileDTO.version,
+            profileDTO.type,
+            profileDTO?.encryptedPassphrase,
+            profileDTO?.path,
         )
     }
 

@@ -82,8 +82,11 @@ export default class extends CreateProfileCommand {
         const name = await new ProfileNameResolver().resolve(options)
         const password = await new PasswordResolver().resolve(options)
         const isDefault = await new DefaultResolver().resolve(options)
+
+        this.spinner.start()
         const generationHash = await new GenerationHashResolver().resolve(options)
         const networkCurrency = await new NetworkCurrencyResolver().resolve(options)
+        this.spinner.stop(true)
 
         const baseArguments: ProfileCreationBase = {
             generationHash,

@@ -53,11 +53,13 @@ export class AccountCredentialsTable {
         this.renderAccountProperties()
         if (args.password) {this.table.push(['Password', args.password.value])}
         if (args.mnemonic) {this.table.push(['Mnemonic', args.mnemonic])}
-        if (args.pathNumber && args.pathNumber !== null) {this.table.push([
-            'Path',
-            // Address paths are 0-based but shown as 1-based to the users
-            `Seed wallet n. ${args.pathNumber + 1} (${DerivationService.getPathFromPathNumber(args.pathNumber)})`,
-        ])}
+        if (args.pathNumber !== undefined && args.pathNumber !== null) {
+            this.table.push([
+                'Path',
+                // Address paths are 0-based but shown as 1-based to the users
+                `Seed wallet n. ${args.pathNumber + 1} (${DerivationService.getPathFromPathNumber(args.pathNumber)})`,
+            ])
+        }
     }
 
     public static createFromProfile(profile: Profile, password: Password): AccountCredentialsTable {

@@ -15,11 +15,13 @@
  * limitations under the License.
  *
  */
+import {command, metadata} from 'clime'
+
 import {AccountCredentialsTable} from '../../interfaces/create.profile.command'
+import {EncryptionService} from '../../services/encryption.service'
+import {PasswordResolver} from '../../resolvers/password.resolver'
 import {ProfileCommand} from '../../interfaces/profile.command'
 import {ProfileOptions} from '../../interfaces/profile.options'
-import {PasswordResolver} from '../../resolvers/password.resolver'
-import {command, metadata} from 'clime'
 
 @command({
     description: 'View profile credentials',
@@ -34,8 +36,19 @@ export default class extends ProfileCommand {
     async execute(options: ProfileOptions) {
         const profile = this.getProfile(options)
         const password = await new PasswordResolver().resolve(options)
-        const account = profile.decrypt(password)
-        const text = AccountCredentialsTable.createFromAccount(account).toString()
-        console.log(text)
+
+        if (profile.type === 'PrivateKey') {
+            const account = profile.decrypt(password)
+            console.log(AccountCredentialsTable.createFromAccount(account).toString())
+        } else {
+            if (!profile.encryptedPassphrase || !profile.pathNumber) {return }
+            const account = profile.decrypt(password)
+            const mnemonic = EncryptionService.decrypt(profile.encryptedPassphrase, password)
+            const {pathNumber} = profile
+
+            console.log(AccountCredentialsTable.createFromAccount(
+                account, mnemonic, pathNumber,
+            ).toString())
+        }
     }
 }

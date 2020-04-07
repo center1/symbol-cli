@@ -91,7 +91,9 @@ export class Profile {
             ['Profile type', this.type],
         )
 
-        if (this.type === 'HD') {this.table.push(['Path', this.path])}
+        if (this.type === 'HD' && this.pathNumber !== null) {
+            this.table.push(['Path', `Path n. ${this.pathNumber + 1} (${this.path})` ])
+        }
     }
 
     /**

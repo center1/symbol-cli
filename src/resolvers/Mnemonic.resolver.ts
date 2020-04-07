@@ -15,6 +15,8 @@
  * limitations under the License.
  *
  */
+import {Options} from 'clime'
+
 import {MnemonicPassphraseValidator} from '../validators/mnemonic.validator'
 import {OptionsResolver} from '../options-resolver'
 import {Resolver} from './resolver'
@@ -27,10 +29,10 @@ export class MnemonicResolver implements Resolver {
      * Resolves a mnemonic passphrase provided by the user.
      * @returns {Promise<string>}
      */
-    async resolve(): Promise<string> {
+    async resolve(options: Options): Promise<string> {
         return OptionsResolver(
-            {},
-            'privateKey',
+            options,
+            'mnemonic',
             () => undefined,
             'Enter a mnemonic:',
             'password',

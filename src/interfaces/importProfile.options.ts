@@ -29,8 +29,14 @@ export class ImportProfileOptions extends CreateProfileOptions {
  privateKey: string
 
  @option({
-  flag: 'm',
+  flag: 'M',
   description: '(Optional) Import a profile using a private key.',
  })
  mnemonic: string
+
+ @option({
+  flag: 'N',
+  description: '(Optional) HD wallet path number.',
+ })
+ pathNumber: number
 }

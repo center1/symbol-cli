@@ -72,8 +72,8 @@ export default class extends CreateProfileCommand {
             const privateKey = await new PrivateKeyResolver().resolve(options)
             profile = this.createProfile({...baseArguments, privateKey})
         } else {
-            const mnemonic = await new MnemonicResolver().resolve()
-            const pathNumber = await new PathNumberResolver().resolve()
+            const mnemonic = await new MnemonicResolver().resolve(options)
+            const pathNumber = await new PathNumberResolver().resolve(options)
             profile = this.createProfile({...baseArguments, mnemonic, pathNumber})
         }
 

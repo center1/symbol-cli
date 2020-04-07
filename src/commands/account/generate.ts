@@ -66,7 +66,7 @@ export default class extends CreateProfileCommand {
                 const account = Account.generateNewAccount(networkType)
                 console.log(AccountCredentialsTable.createFromAccount(account).toString())
             } else {
-                const pathNumber = await new PathNumberResolver().resolve()
+                const pathNumber = await new PathNumberResolver().resolve(options)
                 const mnemonic = MnemonicPassPhrase.createRandom().plain
                 const account = DerivationService.getAccountFromMnemonic(
                     mnemonic, pathNumber,
@@ -79,7 +79,7 @@ export default class extends CreateProfileCommand {
         }
 
         options.url = await new URLResolver().resolve(options)
-        const profileName = await new ProfileNameResolver().resolve(options)
+        const name = await new ProfileNameResolver().resolve(options)
         const password = await new PasswordResolver().resolve(options)
         const isDefault = await new DefaultResolver().resolve(options)
         const generationHash = await new GenerationHashResolver().resolve(options)
@@ -102,11 +102,11 @@ export default class extends CreateProfileCommand {
             const {privateKey} = Account.generateNewAccount(networkType)
             profile = this.createProfile({...baseArguments, privateKey})
         } else {
-            const mnemonic = MnemonicPassPhrase.createRandom().toSeed().toString('hex')
+            const mnemonic = MnemonicPassPhrase.createRandom().plain
             profile = this.createProfile({...baseArguments, mnemonic, pathNumber: 1})
         }
 
         console.log(AccountCredentialsTable.createFromProfile(profile, password).toString())
-        console.log(chalk.green('\nStored ' + profileName + ' profile'))
+        console.log(chalk.green('\nStored ' + name + ' profile'))
     }
 }

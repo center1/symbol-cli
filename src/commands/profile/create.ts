@@ -74,7 +74,7 @@ export default class extends CreateProfileCommand {
             const {privateKey} = Account.generateNewAccount(networkType)
             profile = this.createProfile({...baseArguments, privateKey})
         } else {
-            const mnemonic = MnemonicPassPhrase.createRandom().toSeed().toString('hex')
+            const mnemonic = MnemonicPassPhrase.createRandom().plain
             profile = this.createProfile({...baseArguments, mnemonic, pathNumber: 1})
         }
 

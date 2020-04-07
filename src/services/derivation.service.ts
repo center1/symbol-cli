@@ -44,7 +44,7 @@ export class DerivationService {
   * @returns {number}
   */
  public static getPathIndexFromPath(path: string): number {
-  return parseInt(path.split('/')[4], 10)
+  return parseInt(path.split('/')[3], 10)
  }
 
  /**

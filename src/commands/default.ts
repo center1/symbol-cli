@@ -78,8 +78,4 @@ export const subcommands = [
         name: 'transaction',
         brief: 'Announce transactions',
     },
-    {
-        name: 'hd-wallet',
-        brief: 'Create mnemonic passphrases',
-    },
 ]

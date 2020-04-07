@@ -1,8 +1,9 @@
-import * as fs from 'fs'
-import {NetworkType, Password, SimpleWallet, Account} from 'symbol-sdk'
 import {expect} from 'chai'
+import {NetworkType, Password, Account} from 'symbol-sdk'
+import * as fs from 'fs'
 
 import {CreateProfileCommand, AccountCredentialsTable} from '../../src/interfaces/create.profile.command'
+import {ImportType} from '../../src/models/importType.enum'
 import {NetworkCurrency} from '../../src/models/networkCurrency.model'
 import {ProfileRepository} from '../../src/respositories/profile.repository'
 
@@ -11,7 +12,6 @@ const networkCurrency = NetworkCurrency.createFromDTO({namespaceId: 'symbol.xym'
 describe('Create Profile Command', () => {
     let repositoryFileUrl: string
     let command: CreateProfileCommand
-    let wallet: SimpleWallet
 
     class StubCommand extends CreateProfileCommand {
         constructor() {
@@ -24,7 +24,7 @@ describe('Create Profile Command', () => {
     }
 
     const removeAccountsFile = () => {
-        const file = (process.env.HOME  || process.env.USERPROFILE) + '/' + repositoryFileUrl
+        const file = (process.env.HOME || process.env.USERPROFILE) + '/' + repositoryFileUrl
         if (fs.existsSync(file)) {
             fs.unlinkSync(file)
         }
@@ -33,7 +33,6 @@ describe('Create Profile Command', () => {
     before(() => {
         removeAccountsFile()
         repositoryFileUrl = '.symbolrctest.json'
-        wallet = SimpleWallet.create('test', new Password('12345678'), NetworkType.MIJIN_TEST)
         command = new StubCommand()
     })
 
@@ -50,20 +49,62 @@ describe('Create Profile Command', () => {
     })
 
     it('should create a new profile', () => {
-        const profile = command['createProfile'](wallet, 'http://localhost:3000', false, '1', networkCurrency)
-        expect(profile.name).to.equal(wallet.name)
+        const name = 'default'
+
+        const profile = command['createProfile']({
+            generationHash: '',
+            importType: ImportType.PrivateKey,
+            isDefault: false,
+            name,
+            networkCurrency,
+            networkType: NetworkType.MAIN_NET,
+            password: new Password('password'),
+            url: 'http://localhost:3000',
+            privateKey: Account.generateNewAccount(NetworkType.MAIN_NET).privateKey,
+        })
+
+        expect(profile.name).to.equal(name)
     })
 
     it('should set as default when creating new profile', () => {
-        const profile = command['createProfile'](wallet, 'http://localhost:3000', true, '1', networkCurrency)
-        expect(profile.name).to.equal(wallet.name)
-        expect(new ProfileRepository(repositoryFileUrl).getDefaultProfile().name).to.equal(wallet.name)
+        const name = 'default'
+
+        const profile = command['createProfile']({
+            generationHash: '',
+            importType: ImportType.PrivateKey,
+            isDefault: true,
+            name,
+            networkCurrency,
+            networkType: NetworkType.MAIN_NET,
+            password: new Password('password'),
+            url: 'http://localhost:3000',
+            privateKey: Account.generateNewAccount(NetworkType.MAIN_NET).privateKey,
+        })
+
+        expect(profile.name).to.equal(name)
+        expect(new ProfileRepository(repositoryFileUrl).getDefaultProfile().name)
+            .to.equal(name)
     })
 
     it('should set profile as default', () => {
-        command['createProfile'](wallet, 'http://localhost:3000', false, '1', networkCurrency)
-        command['setDefaultProfile'](wallet.name)
-        expect(new ProfileRepository(repositoryFileUrl).getDefaultProfile().name).to.equal(wallet.name)
+        const name = 'new profile'
+
+        command['createProfile']({
+            generationHash: '',
+            importType: ImportType.PrivateKey,
+            isDefault: true,
+            name,
+            networkCurrency,
+            networkType: NetworkType.MAIN_NET,
+            password: new Password('password'),
+            url: 'http://localhost:3000',
+            privateKey: Account.generateNewAccount(NetworkType.MAIN_NET).privateKey,
+        })
+
+        command['setDefaultProfile'](name)
+
+        expect(new ProfileRepository(repositoryFileUrl).getDefaultProfile().name)
+            .to.equal(name)
     })
 
     it('should not set as default if profile does not exist', () => {
@@ -73,7 +114,7 @@ describe('Create Profile Command', () => {
 
 describe('AccountCredentialsTable', () => {
     it('toString() should not be undefined', () => {
-        const table = new AccountCredentialsTable(
+        const table = AccountCredentialsTable.createFromAccount(
             Account.generateNewAccount(NetworkType.MAIN_NET),
         )
 

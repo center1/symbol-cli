@@ -15,25 +15,22 @@
  * limitations under the License.
  *
  */
-import {SaveResolver} from '../../src/resolvers/save.resolver'
-import {expect} from 'chai'
+import {option} from 'clime'
+import {CreateProfileOptions} from './createProfile.options'
 
-describe('Save resolver', () => {
+/**
+ * Create profile options.
+ */
+export class ImportProfileOptions extends CreateProfileOptions {
+ @option({
+  flag: 'P',
+  description: 'Account private key.',
+ })
+ privateKey: string
 
-    it('should return boolean', async () => {
-        const options = {
-            save: true,
-            url: '',
-            network: '',
-            profile: '',
-            password: '',
-            default: false,
-            generationHash: '1',
-            namespaceId: '',
-            divisibility: 0,
-            hd: false,
-        }
-        expect(await new SaveResolver().resolve(options)).to.be.equal(true)
-    })
-
-})
+ @option({
+  flag: 'm',
+  description: '(Optional) Import a profile using a private key.',
+ })
+ mnemonic: string
+}

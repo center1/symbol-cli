@@ -35,7 +35,7 @@ export default class extends ProfileCommand {
         const profile = this.getProfile(options)
         const password = await new PasswordResolver().resolve(options)
         const account = profile.decrypt(password)
-        const text = new AccountCredentialsTable(account).toString()
+        const text = AccountCredentialsTable.createFromAccount(account).toString()
         console.log(text)
     }
 }

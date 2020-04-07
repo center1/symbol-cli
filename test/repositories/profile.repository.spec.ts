@@ -15,15 +15,16 @@
  * limitations under the License.
  *
  */
-import * as fs from 'fs'
 import {expect} from 'chai'
-
-import {NetworkCurrency} from '../../src/models/networkCurrency.model'
-import {NetworkType, Password, SimpleWallet} from 'symbol-sdk'
-import {Profile} from '../../src/models/profile.model'
-import {ProfileRepository} from '../../src/respositories/profile.repository'
-import {profileDTOv1, profileDTO2v2} from '../mocks/profiles/profileDTO.mock'
+import {NetworkType, Password, SimpleWallet, Account} from 'symbol-sdk'
 import {when, spy} from 'ts-mockito'
+import * as fs from 'fs'
+
+import {ImportType} from '../../src/models/importType.enum'
+import {NetworkCurrency} from '../../src/models/networkCurrency.model'
+import {Profile} from '../../src/models/profile.model'
+import {profileDTOv1, profileDTO2v2} from '../mocks/profiles/profileDTO.mock'
+import {ProfileRepository} from '../../src/respositories/profile.repository'
 
 const networkCurrency = NetworkCurrency.createFromDTO({namespaceId: 'symbol.xym', divisibility: 6})
 
@@ -58,49 +59,90 @@ describe('ProfileRepository', () => {
     })
 
     it('should save new account', () => {
-        const simpleWallet = SimpleWallet
-            .create('test', new Password('password'), NetworkType.MIJIN_TEST)
-        const url = 'http://localhost:3000'
-        const networkGenerationHash = 'test'
+        const networkType = NetworkType.MIJIN_TEST
         const profileRepository = new ProfileRepository(repositoryFileUrl)
-        const savedProfile = profileRepository.save(simpleWallet, url, networkGenerationHash, networkCurrency)
-        expect(savedProfile.simpleWallet).to.be.equal(simpleWallet)
+        const profile1 = Profile.createFromPrivateKey({
+            generationHash: 'default',
+            importType: ImportType.PrivateKey,
+            isDefault: false,
+            name: 'default',
+            networkCurrency,
+            networkType,
+            password: new Password('password'),
+            url: 'http://localhost:3000',
+            privateKey: Account.generateNewAccount(networkType).privateKey,
+        })
+
+        const savedProfile = profileRepository.save(profile1)
+        expect(savedProfile.simpleWallet).to.be.equal(profile1.simpleWallet)
     })
 
     it('should not save two accounts with the same name', () => {
-        const simpleWallet = SimpleWallet
-            .create('default', new Password('password'), NetworkType.MIJIN_TEST)
-        const simpleWallet2 = SimpleWallet
-            .create('default', new Password('password'), NetworkType.MIJIN_TEST)
-        const url = 'http://localhost:3000'
+        const networkType = NetworkType.MIJIN_TEST
         const profileRepository = new ProfileRepository(repositoryFileUrl)
-        const networkGenerationHash = 'test'
-        profileRepository.save(simpleWallet, url, networkGenerationHash, networkCurrency)
-        expect(() => profileRepository.save(simpleWallet2, url, networkGenerationHash, networkCurrency))
+        const profile1 = Profile.createFromPrivateKey({
+            generationHash: 'default',
+            importType: ImportType.PrivateKey,
+            isDefault: false,
+            name: 'default',
+            networkCurrency,
+            networkType,
+            password: new Password('password'),
+            url: 'http://localhost:3000',
+            privateKey: Account.generateNewAccount(networkType).privateKey,
+        })
+
+        const profile2 = Profile.createFromPrivateKey({
+            generationHash: 'default',
+            importType: ImportType.PrivateKey,
+            isDefault: false,
+            name: 'default',
+            networkCurrency,
+            networkType,
+            password: new Password('password'),
+            url: 'http://localhost:3000',
+            privateKey: Account.generateNewAccount(networkType).privateKey,
+        })
+
+        profileRepository.save(profile1)
+        expect(profile1.simpleWallet.encryptedPrivateKey)
+            .not.equals(profile2.simpleWallet.encryptedPrivateKey)
+        expect(() => profileRepository.save(profile2))
             .to.throws('A profile named default already exists.')
     })
 
     it('should find an account', () => {
-        const simpleWallet = SimpleWallet
-            .create('default', new Password('password'), NetworkType.MIJIN_TEST)
-        const url = 'http://localhost:3000'
+        const networkType = NetworkType.MIJIN_TEST
         const profileRepository = new ProfileRepository(repositoryFileUrl)
-        const networkGenerationHash = 'test'
-        profileRepository.save(simpleWallet, url, networkGenerationHash, networkCurrency)
+        const account = Account.generateNewAccount(networkType)
+        const profile = Profile.createFromPrivateKey({
+            generationHash: 'test',
+            importType: ImportType.PrivateKey,
+            isDefault: false,
+            name: 'default',
+            networkCurrency,
+            networkType,
+            password: new Password('password'),
+            url: 'http://localhost:3000',
+            privateKey: account.privateKey,
+        })
+
+        profileRepository.save(profile)
         const savedProfile = profileRepository.find('default')
+
         expect(savedProfile).to.not.be.equal(undefined)
 
         if (savedProfile instanceof Profile) {
             expect(savedProfile.simpleWallet.address.plain())
-                .to.be.equal(simpleWallet.address.plain())
+                .to.be.equal(account.address.plain())
 
             expect(savedProfile.simpleWallet.address.networkType)
-                .to.be.equal(simpleWallet.address.networkType)
+                .to.be.equal(account.address.networkType)
 
-            expect(savedProfile.url).to.be.equal(url)
-            expect(savedProfile.name).to.be.equal('default')
-            expect(savedProfile.networkType).to.be.equal(NetworkType.MIJIN_TEST)
-            expect(savedProfile.networkGenerationHash).to.be.equal('test')
+            expect(savedProfile.url).to.be.equal(profile.url)
+            expect(savedProfile.name).to.be.equal(profile.name)
+            expect(savedProfile.networkType).to.be.equal(networkType)
+            expect(savedProfile.networkGenerationHash).to.be.equal(profile.networkGenerationHash)
         }
     })
 
@@ -110,15 +152,34 @@ describe('ProfileRepository', () => {
     })
 
     it('should get all profiles',  () => {
-        const simpleWallet1 = SimpleWallet
-            .create('simpleWallet1', new Password('password'), NetworkType.MIJIN_TEST)
-        const simpleWallet2 = SimpleWallet
-            .create('default', new Password('password'), NetworkType.MIJIN_TEST)
+        const networkType = NetworkType.MIJIN_TEST
         const profileRepository = new ProfileRepository(repositoryFileUrl)
-        const networkGenerationHash = 'test'
-        const url = 'http://localhost:3000'
-        profileRepository.save(simpleWallet1, url, networkGenerationHash, networkCurrency)
-        profileRepository.save(simpleWallet2, url, networkGenerationHash, networkCurrency)
+        const profile1 = Profile.createFromPrivateKey({
+            generationHash: 'default',
+            importType: ImportType.PrivateKey,
+            isDefault: false,
+            name: 'default',
+            networkCurrency,
+            networkType,
+            password: new Password('password'),
+            url: 'http://localhost:3000',
+            privateKey: Account.generateNewAccount(networkType).privateKey,
+        })
+
+        const profile2 = Profile.createFromPrivateKey({
+            generationHash: 'default',
+            importType: ImportType.PrivateKey,
+            isDefault: false,
+            name: 'dummy profile',
+            networkCurrency,
+            networkType,
+            password: new Password('password'),
+            url: 'http://localhost:3000',
+            privateKey: Account.generateNewAccount(networkType).privateKey,
+        })
+
+        profileRepository.save(profile1)
+        profileRepository.save(profile2)
         const all = profileRepository.all()
         expect(all.length).to.be.equal(2)
     })
@@ -133,21 +194,41 @@ describe('ProfileRepository', () => {
     })
 
     it('should set and get default profile',  () => {
-        const simpleWallet1 = SimpleWallet
-            .create('simpleWallet1', new Password('password'), NetworkType.MIJIN_TEST)
-        const simpleWallet2 = SimpleWallet
-            .create('default', new Password('password'), NetworkType.MIJIN_TEST)
+        const networkType = NetworkType.MIJIN_TEST
         const profileRepository = new ProfileRepository(repositoryFileUrl)
-        const networkGenerationHash = 'test'
-        const url = 'http://localhost:3000'
-        profileRepository.save(simpleWallet1, url, networkGenerationHash, networkCurrency)
-        profileRepository.save(simpleWallet2, url, networkGenerationHash, networkCurrency)
+        const profile1 = Profile.createFromPrivateKey({
+            generationHash: 'generationHash',
+            importType: ImportType.PrivateKey,
+            isDefault: false,
+            name: 'not default',
+            networkCurrency,
+            networkType,
+            password: new Password('password'),
+            url: 'http://localhost:3000',
+            privateKey: Account.generateNewAccount(networkType).privateKey,
+        })
+
+        const profile2 = Profile.createFromPrivateKey({
+            generationHash: 'generationHash',
+            importType: ImportType.PrivateKey,
+            isDefault: false,
+            name: 'default',
+            networkCurrency,
+            networkType,
+            password: new Password('password'),
+            url: 'http://localhost:3000',
+            privateKey: Account.generateNewAccount(networkType).privateKey,
+        })
+
+        profileRepository.save(profile1)
+        profileRepository.save(profile2)
         profileRepository.setDefault('default')
         const currentDefaultProfile = profileRepository.getDefaultProfile()
+
         expect(currentDefaultProfile).to.not.be.equal(undefined)
         if (currentDefaultProfile instanceof Profile) {
             expect(currentDefaultProfile.simpleWallet.address.plain())
-                .to.be.equal(simpleWallet2.address.plain())
+                .to.be.equal(profile2.address.plain())
         }
     })
 

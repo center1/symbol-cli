@@ -15,10 +15,11 @@
  * limitations under the License.
  *
  */
-import {CreateProfileOptions} from '../../interfaces/create.profile.command'
 import {command, metadata, Command} from 'clime'
 import {MnemonicPassPhrase} from 'symbol-hd-wallets'
 import chalk from 'chalk'
+
+import {CreateProfileOptions} from '../../interfaces/createProfile.options'
 
 export class CommandOptions extends CreateProfileOptions {}
 

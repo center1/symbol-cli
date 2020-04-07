@@ -19,6 +19,7 @@
 import {expect} from 'chai'
 import {Account, NetworkType, Password, SimpleWallet} from 'symbol-sdk'
 
+import {ImportType} from '../../src/models/importType.enum'
 import {NetworkCurrency} from '../../src/models/networkCurrency.model'
 import {Profile} from '../../src/models/profile.model'
 
@@ -27,18 +28,23 @@ const networkCurrency = NetworkCurrency.createFromDTO({namespaceId: 'symbol.xym'
 
 describe('Profile', () => {
     it('should contain the fields', () => {
-        const profile = new Profile(
-            SimpleWallet.create('default', new Password('password'), NetworkType.MIJIN_TEST),
-            'url',
-            'generationHash',
+        const profile = Profile.createFromPrivateKey({
+            generationHash: 'generationHash',
+            importType: ImportType.PrivateKey,
+            isDefault: false,
+            name: 'default',
             networkCurrency,
-            2,
-            'PrivateKey'
-        )
+            networkType: NetworkType.MIJIN_TEST,
+            password: new Password('password'),
+            url: 'http://localhost:1234',
+            privateKey: Account.generateNewAccount(NetworkType.MIJIN_TEST).privateKey,
+        })
+
         expect(profile.name).to.be.equal('default')
         expect(profile.networkGenerationHash).to.be.equal('generationHash')
-        expect(profile.url).to.be.equal('url')
+        expect(profile.url).to.be.equal('http://localhost:1234')
         expect(profile.networkType).to.be.equal(NetworkType.MIJIN_TEST)
+        expect(profile.type).to.be.equal('PrivateKey')
     })
 
     it('should be created from DTO', () => {
@@ -75,42 +81,61 @@ describe('Profile', () => {
     })
 
     it('should validate if password opens wallet', () => {
-        const privateKey =  '0'.repeat(64)
         const password = new Password('password')
-        const simpleWallet = SimpleWallet.createFromPrivateKey(
-            'default',
+        const networkType = NetworkType.MIJIN_TEST
+        const profile = Profile.createFromPrivateKey({
+            generationHash: 'default',
+            importType: ImportType.PrivateKey,
+            isDefault: false,
+            name: 'default',
+            networkCurrency,
+            networkType,
             password,
-            privateKey,
-            NetworkType.MIJIN_TEST)
-        const profile = new Profile(simpleWallet, 'url', 'generationHash', networkCurrency, 2, 'PrivateKey')
+            url: 'http://localhost:3000',
+            privateKey: Account.generateNewAccount(networkType).privateKey,
+        })
+
         expect(profile.isPasswordValid(new Password('12345678'))).to.be.equal(false)
         expect(profile.isPasswordValid(password)).to.be.equal(true)
     })
 
     it('should decrypt profile', async () => {
-        const privateKey =  '0'.repeat(64)
         const password = new Password('password')
-        const simpleWallet = SimpleWallet.createFromPrivateKey(
-            'default',
+        const networkType = NetworkType.MIJIN_TEST
+        const account = Account.generateNewAccount(networkType)
+
+        const profile = Profile.createFromPrivateKey({
+            generationHash: 'default',
+            importType: ImportType.PrivateKey,
+            isDefault: false,
+            name: 'default',
+            networkCurrency,
+            networkType,
             password,
-            privateKey,
-            NetworkType.MIJIN_TEST)
-        const profile = new Profile(simpleWallet, 'url', 'generationHash', networkCurrency, 2, 'PrivateKey')
-        expect(profile.decrypt(password).privateKey).to.be.equal(privateKey)
-        expect(profile.address).to.be.equal(simpleWallet.address)
+            url: 'http://localhost:3000',
+            privateKey: account.privateKey,
+        })
+
+        expect(profile.decrypt(password).privateKey).to.equal(account.privateKey)
+        expect(profile.address).to.deep.equal(account.address)
     })
 
     it('should throw error if trying to decrypt profile with an invalid password', () => {
-        const privateKey =  '0'.repeat(64)
-        const password = new Password('password')
-        const simpleWallet = SimpleWallet.createFromPrivateKey(
-            'default',
-            password,
-            privateKey,
-            NetworkType.MIJIN_TEST)
-        const profile = new Profile(simpleWallet, 'url', 'generationHash', networkCurrency, 2, 'PrivateKey')
-        const password2 = new Password('test12345678')
-        expect(() => profile.decrypt(password2))
+        const networkType = NetworkType.MIJIN_TEST
+        const profile = Profile.createFromPrivateKey({
+            generationHash: 'default',
+            importType: ImportType.PrivateKey,
+            isDefault: false,
+            name: 'default',
+            networkCurrency,
+            networkType,
+            password: new Password('password'),
+            url: 'http://localhost:3000',
+            privateKey: Account.generateNewAccount(networkType).privateKey,
+        })
+
+        const wrongPassword = new Password('test12345678')
+        expect(() => profile.decrypt(wrongPassword))
             .to.throws('The password provided does not match your account password')
     })
 })

@@ -21,7 +21,7 @@ import {ProfileService} from '../../src/services/profile.service'
 import {expect} from 'chai'
 import {NetworkType, Password, SimpleWallet} from 'symbol-sdk'
 import {instance, mock, when} from 'ts-mockito'
-import {NetworkCurrency} from '../../src/models/networkCurrency.model'
+import {mockProfile1} from '../mocks/profiles/profile.mock'
 
 describe('Configure service', () => {
 
@@ -36,52 +36,21 @@ describe('Configure service', () => {
         expect(profileService).to.not.be.equal(undefined)
     })
 
-    it('should create a new profile', () => {
-        const simpleWallet = SimpleWallet
-            .create('default', new Password('password'), NetworkType.MIJIN_TEST)
-
-        const url = 'http://localhost:1234'
-        const networkGenerationHash = 'test'
-        const networkCurrency = NetworkCurrency.createFromDTO({namespaceId: 'symbol.xym', divisibility: 6})
-
-        const profile = new Profile(simpleWallet, url, networkGenerationHash, networkCurrency, 2, 'PrivateKey')
-
-        const mockProfileRepository = mock(ProfileRepository)
-        when(mockProfileRepository.save(simpleWallet, url,  networkGenerationHash, networkCurrency))
-            .thenReturn(profile)
-
-        const profileService = new ProfileService(instance(mockProfileRepository))
-        const createdProfile = profileService.createNewProfile(simpleWallet, url, networkGenerationHash, networkCurrency)
-        expect(createdProfile.simpleWallet).to.be.equal(simpleWallet)
-        expect(createdProfile.url).to.be.equal(url)
-        expect(createdProfile.name).to.be.equal('default')
-        expect(createdProfile.networkType).to.be.equal(NetworkType.MIJIN_TEST)
-        expect(createdProfile.networkGenerationHash).to.be.equal('test')
-    })
-
     it('should find account account with name', () => {
-        const simpleWallet = SimpleWallet
-            .create('default', new Password('password'), NetworkType.MIJIN_TEST)
-
-        const url = 'http://localhost:1234'
-
-        const networkGenerationHash = 'test'
-
-        const networkCurrency = NetworkCurrency.createFromDTO({namespaceId: 'symbol.xym', divisibility: 6})
-
-        const profile = new Profile(simpleWallet, url, networkGenerationHash, networkCurrency, 2, 'PrivateKey')
+        const profile = mockProfile1
         const mockProfileRepository = mock(ProfileRepository)
-        when(mockProfileRepository.find('default'))
-            .thenReturn(profile)
+
+        when(mockProfileRepository.find('default')).thenReturn(profile)
 
         const profileService = new ProfileService(instance(mockProfileRepository))
         const createdProfile = profileService.findProfileNamed('default')
+
         if (createdProfile instanceof Profile) {
-            expect(createdProfile.simpleWallet).to.be.equal(simpleWallet)
-            expect(createdProfile.url).to.be.equal(url)
+            expect(createdProfile.simpleWallet).to.be.equal(profile.simpleWallet)
+            expect(createdProfile.url).to.be.equal(profile.url)
             expect(createdProfile.name).to.be.equal('default')
             expect(createdProfile.networkType).to.be.equal(NetworkType.MIJIN_TEST)
-            expect(createdProfile.networkGenerationHash).to.be.equal(networkGenerationHash)
+            expect(createdProfile.networkGenerationHash).to.be.equal(profile.networkGenerationHash)
         }
     })
 
@@ -99,10 +68,7 @@ describe('Configure service', () => {
     it('should get current profile', () => {
         const simpleWallet = SimpleWallet
             .create('test', new Password('password'), NetworkType.MIJIN_TEST)
-        const url = 'http://localhost:1234'
-        const networkGenerationHash = 'test'
-        const networkCurrency = NetworkCurrency.createFromDTO({namespaceId: 'symbol.xym', divisibility: 6})
-        const profile = new Profile(simpleWallet, url, networkGenerationHash, networkCurrency, 2, 'PrivateKey')
+        const profile = mockProfile1
         const mockProfileRepository = mock(ProfileRepository)
         when(mockProfileRepository.find('test'))
             .thenReturn(profile)

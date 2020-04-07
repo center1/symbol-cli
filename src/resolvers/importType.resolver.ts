@@ -1,7 +1,8 @@
+import {CreateProfileOptions} from '../interfaces/createProfile.options'
+import {ImportProfileOptions} from '../interfaces/importProfile.options'
+import {ImportType} from '../models/importType.enum'
 import {OptionsChoiceResolver} from '../options-resolver'
 import {Resolver} from './resolver'
-import {ImportType} from '../models/importType.enum'
-import {CreateProfileOptions} from '../interfaces/create.profile.command'
 
 /**
  * Import type resolver
@@ -15,9 +16,18 @@ export class ImportTypeResolver implements Resolver {
      * @param {string} altKey - Alternative key.
      * @returns {Promise<number>}
      */
-    async resolve(options: CreateProfileOptions, altText?: string, altKey?: string): Promise<number> {
-        if (options['private-key']) {return ImportType.PrivateKey}
-        if (options.mnemonic) {return ImportType.Mnemonic}
+    async resolve(
+        options: ImportProfileOptions | CreateProfileOptions,
+        altText?: string,
+        altKey?: string,
+    ): Promise<number> {
+        // interpret other options, default to private key profile in case of conflict
+        if (options instanceof ImportProfileOptions) {
+            if (options.privateKey) {return ImportType.PrivateKey}
+            if (options.mnemonic) {return ImportType.Mnemonic}
+        }
+
+        if (options.hd) {return ImportType.Mnemonic}
 
         const choices = Object
             .keys(ImportType)

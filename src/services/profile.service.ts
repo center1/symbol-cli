@@ -35,23 +35,6 @@ export class ProfileService {
     }
 
     /**
-     * Creates a new profile from a SimpleWallet.
-     * @param {SimpleWallet} simpleWallet - Wallet object with sensitive information.
-     * @param {string} url - Node URL by default.
-     * @param {string} networkGenerationHash - Network's generation hash.
-     * @param {NetworkCurrency} networkCurrency - Network currency.
-     * @returns {Profile}
-     */
-    createNewProfile(
-        simpleWallet: SimpleWallet,
-        url: string,
-        networkGenerationHash: string,
-        networkCurrency: NetworkCurrency,
-    ): Profile {
-        return this.profileRepository.save(simpleWallet, url, networkGenerationHash, networkCurrency)
-    }
-
-    /**
      * Find profile by name.
      * @param {string} name - Profile name.
      * @returns {Profile}

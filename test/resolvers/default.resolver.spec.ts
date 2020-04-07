@@ -33,6 +33,7 @@ describe('Default resolver', () => {
             'divisibility': 0,
             'private-key': true,
             'mnemonic': false,
+            'hd': false,
         }
         expect(await new DefaultResolver().resolve(options)).to.be.equal(true)
     })

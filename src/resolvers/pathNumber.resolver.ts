@@ -18,8 +18,6 @@ export class PathNumberResolver implements Resolver {
                 value: key,
             }))
 
-        console.log('PathNumberResolver -> choices', choices)
-
         const value = +(await OptionsChoiceResolver({},
             'pathNumber',
             'Select the child account number:',

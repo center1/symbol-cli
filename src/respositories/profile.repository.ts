@@ -73,31 +73,17 @@ export class ProfileRepository {
      * @param {NetworkCurrency} networkCurrency - Network's generation hash.
      * @returns {Profile}
      */
-    public save(
-        simpleWallet: SimpleWallet,
-        url: string,
-        networkGenerationHash: string,
-        networkCurrency: NetworkCurrency,
-    ): Profile {
+    public save(profile: Profile): Profile {
         const profiles = this.getProfiles()
-        const {name} = simpleWallet
+        const {name} = profile.simpleWallet
+
         if (profiles.hasOwnProperty(name)) {
             throw new Error(`A profile named ${name} already exists.`)
         }
 
-        // @TODO: use SimpleWallet.toDTO() once it is available in the SDK
-        const simpleWalletDTO: ISimpleWalletDTO = JSON.parse(JSON.stringify(simpleWallet))
-        profiles[name] = {
-            simpleWallet: simpleWalletDTO,
-            url,
-            networkGenerationHash,
-            networkCurrency: networkCurrency.toDTO(),
-            default: '0',
-            version: CURRENT_PROFILE_VERSION,
-            type: 'PrivateKey',
-        }
+        profiles[name] = profile.toDTO()
         this.saveProfiles(profiles)
-        return new Profile(simpleWallet, url, networkGenerationHash, networkCurrency, 2, 'PrivateKey')
+        return profile
     }
 
     /**

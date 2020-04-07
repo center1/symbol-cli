@@ -15,15 +15,17 @@
  * limitations under the License.
  *
  */
-import * as Table from 'cli-table3'
-import {HorizontalTable} from 'cli-table3'
-import {ExpectedError} from 'clime'
 import {Account, Address, ISimpleWalletDTO, NetworkType, Password, SimpleWallet} from 'symbol-sdk'
+import {ExpectedError} from 'clime'
+import {HorizontalTable} from 'cli-table3'
+import * as Table from 'cli-table3'
+
+import {DerivationService} from '../services/derivation.service'
+import {EncryptionService} from '../services/encryption.service'
 import {NetworkCurrency, NetworkCurrencyDTO} from './networkCurrency.model'
+import {PrivateKeyProfileCreation, HDProfileCreation} from './profileCreation.types'
 
-export const CURRENT_PROFILE_VERSION = 2
-
-export type ProfileType = 'PrivateKey' | 'HD'
+export const CURRENT_PROFILE_VERSION = 3
 
 /**
  * Profile data transfer object.
@@ -40,11 +42,15 @@ interface ProfileDTO {
     path?: string;
 }
 
-
 /**
  * Profile DTO mapped by profile names
-*/
+ */
 export type ProfileRecord = Record<string, ProfileDTO>
+
+/**
+ * Profile types.
+ */
+export type ProfileType = 'PrivateKey' | 'HD'
 
 /**
  * Profile model.
@@ -58,14 +64,15 @@ export class Profile {
      * @param {string} url - Node URL.
      * @param {string} networkGenerationHash - Network generation hash.
      */
-    constructor(public readonly simpleWallet: SimpleWallet,
-                public readonly url: string,
-                public readonly networkGenerationHash: string,
-                public readonly networkCurrency: NetworkCurrency,
-                public readonly version: number,
-                public readonly type: ProfileType,
-                public readonly encryptedPassphrase?: string,
-                public readonly path?: string,
+    private constructor(public readonly simpleWallet: SimpleWallet,
+        public readonly url: string,
+        public readonly networkGenerationHash: string,
+        public readonly networkCurrency: NetworkCurrency,
+        public readonly version: number,
+        public readonly type: ProfileType,
+        public readonly isDefault: '0' | '1',
+        public readonly encryptedPassphrase?: string,
+        public readonly path?: string,
     ) {
         const {namespaceId, divisibility} = networkCurrency
 
@@ -84,31 +91,58 @@ export class Profile {
             ['Profile type', this.type],
         )
 
-        if(this.type === 'HD') {this.table.push(['Path', this.path])}
+        if (this.type === 'HD') {this.table.push(['Path', this.path])}
     }
 
     /**
-     * Gets profile address.
-     * @returns {Address}
+     * Creates a profile from a private key
+     * @static
+     * @param {PrivateKeyProfileCreation} args
+     * @returns {Profile}
      */
-    get address(): Address {
-        return this.simpleWallet.address
+    public static createFromPrivateKey(args: PrivateKeyProfileCreation): Profile {
+        const simpleWallet = SimpleWallet.createFromPrivateKey(
+            args.name, args.password, args.privateKey, args.networkType,
+        )
+
+        return new Profile(
+            simpleWallet,
+            args.url,
+            args.generationHash,
+            args.networkCurrency,
+            CURRENT_PROFILE_VERSION,
+            'PrivateKey',
+            args.isDefault ? '1' : '0',
+        )
     }
 
     /**
-     * Gets profile network type.
-     * @returns {NetworkType}
+     * Creates a profile from a mnemonic passphrase and a path index
+     * @static
+     * @param {HDProfileCreation} args
+     * @returns {Profile}
      */
-    get networkType(): NetworkType {
-        return this.simpleWallet.network
-    }
+    public static createFromMnemonic(args: HDProfileCreation): Profile {
+        const path = DerivationService.getPathFromPathNumber(args.pathNumber)
+        const {privateKey} = DerivationService.getAccountFromMnemonic(args.mnemonic, args.pathNumber)
 
-    /**
-     * Gets profile name.
-     * @returns {string}
-     */
-    get name(): string {
-        return this.simpleWallet.name
+        // create Simple Wallet
+        const simpleWallet = SimpleWallet.createFromPrivateKey(
+            args.name, args.password, privateKey, args.networkType
+        )
+
+        // create profile
+        return new Profile(
+            simpleWallet,
+            args.url,
+            args.generationHash,
+            args.networkCurrency,
+            CURRENT_PROFILE_VERSION,
+            'HD',
+            args.isDefault ? '1' : '0',
+            EncryptionService.encrypt(args.mnemonic, args.password),
+            path,
+        )
     }
 
     /**
@@ -124,16 +158,69 @@ export class Profile {
             NetworkCurrency.createFromDTO(profileDTO.networkCurrency),
             profileDTO.version,
             profileDTO.type,
+            profileDTO.default,
             profileDTO?.encryptedPassphrase,
             profileDTO?.path,
         )
     }
 
     /**
+     * Gets profile address.
+     * @returns {Address}
+     */
+    public get address(): Address {
+        return this.simpleWallet.address
+    }
+
+    /**
+     * Gets profile network type.
+     * @returns {NetworkType}
+     */
+    public get networkType(): NetworkType {
+        return this.simpleWallet.network
+    }
+
+    /**
+     * Gets profile name.
+     * @returns {string}
+     */
+    public get name(): string {
+        return this.simpleWallet.name
+    }
+
+    /**
+     * Gets path number
+     * @returns {(number | null)}
+     */
+    public get pathNumber(): number | null {
+        if (!this.path) {return null}
+        return DerivationService.getPathIndexFromPath(this.path)
+    }
+
+    /**
+     * Returns a profile DTO
+     * @returns {ProfileDTO}
+     */
+    public toDTO(): ProfileDTO {
+        // @TODO: use SimpleWallet.toDTO() once it is available in the SDK
+        return {
+            simpleWallet: JSON.parse(JSON.stringify(this.simpleWallet)),
+            url: this.url,
+            networkGenerationHash: this.networkGenerationHash,
+            networkCurrency: this.networkCurrency.toDTO(),
+            version: this.version,
+            default: this.isDefault,
+            type: this.type,
+            encryptedPassphrase: this.encryptedPassphrase,
+            path: this.path,
+        }
+    }
+
+    /**
      * Formats profile as a string.
      * @returns {string}
      */
-    toString(): string {
+    public toString(): string {
         return this.table.toString()
     }
 
@@ -142,7 +229,7 @@ export class Profile {
      * @param {Password} password.
      * @returns {boolean}
      */
-    isPasswordValid(password: Password): boolean {
+    public isPasswordValid(password: Password): boolean {
         try {
             this.simpleWallet.open(password)
             return true
@@ -157,7 +244,7 @@ export class Profile {
      * @throws {ExpectedError}
      * @returns {Account}
      */
-    decrypt(password: Password): Account {
+    public decrypt(password: Password): Account {
         if (!this.isPasswordValid(password)) {
             throw new ExpectedError('The password provided does not match your account password')
         }

@@ -46,12 +46,14 @@ export class AccountCredentialsTable {
         this.table = new Table({
             style: {head: ['cyan']},
             head: ['Property', 'Value'],
+            colWidths: [15, 70],
+            wordWrap: true,
         }) as HorizontalTable
 
         this.renderAccountProperties()
         if (args.password) {this.table.push(['Password', args.password.value])}
         if (args.mnemonic) {this.table.push(['Mnemonic', args.mnemonic])}
-        if (args.pathNumber) {this.table.push([
+        if (args.pathNumber && args.pathNumber !== null) {this.table.push([
             'Path',
             // Address paths are 0-based but shown as 1-based to the users
             `Seed wallet n. ${args.pathNumber + 1} (${DerivationService.getPathFromPathNumber(args.pathNumber)})`,
